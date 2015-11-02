@@ -11,60 +11,75 @@ pois_us_json = "../networks/foursquare_checkins_Dingqi Yang/dataset_TIST2015_POI
 
 API_KEY = "74bf381ae8e78e8435166cce53d182c9"
 
-def create_database(db):
+def create_database(db, venue = True, checkin = True, hourly_weather = True, daily_weather = True, city = True, category = True):
     cursor = db.cursor()
 
     # Drop table if it already exist using execute() method.
 
     #DELETE TABLES
-    cursor.execute("DROP TABLE IF EXISTS CHECKIN")
-    cursor.execute("DROP TABLE IF EXISTS VENUE")
-    cursor.execute("DROP TABLE IF EXISTS HOURLY_WEATHER")
-    cursor.execute("DROP TABLE IF EXISTS DAILY_WEATHER")
-    cursor.execute("DROP TABLE IF EXISTS CITY")
-    cursor.execute("DROP TABLE IF EXISTS CATEGORY")
+    if checkin:
+        cursor.execute("DROP TABLE IF EXISTS CHECKIN")
+    if venue:
+        cursor.execute("DROP TABLE IF EXISTS VENUE")
+    if hourly_weather:
+        cursor.execute("DROP TABLE IF EXISTS HOURLY_WEATHER")
+    if daily_weather:
+        cursor.execute("DROP TABLE IF EXISTS DAILY_WEATHER")
+    if city:
+        cursor.execute("DROP TABLE IF EXISTS CITY")
+    if category:
+        cursor.execute("DROP TABLE IF EXISTS CATEGORY")
 
 
 
 
     # Create table CITY
-    sql = "CREATE TABLE CITY (id int, country_code CHAR(2), lon FLOAT(9,6), lat FLOAT(9,6),	country_name VARCHAR(256)," \
-          " city_type VARCHAR(256), city_name VARCHAR(256), PRIMARY KEY (id))"
-    cursor.execute(sql)
+    if city:
+        sql = "CREATE TABLE CITY (id int, country_code CHAR(2), lon FLOAT(9,6), lat FLOAT(9,6),	country_name VARCHAR(256)," \
+              " city_type VARCHAR(256), city_name VARCHAR(256), PRIMARY KEY (id))"
+        cursor.execute(sql)
     # Create table CATEGORY
-    sql = "CREATE TABLE CATEGORY (id int, name varchar(256), PRIMARY KEY (id))"
-    cursor.execute(sql)
+    if category:
+        sql = "CREATE TABLE CATEGORY (id int, name varchar(256), PRIMARY KEY (id))"
+        cursor.execute(sql)
     # Create table VENUE
-    sql = "CREATE TABLE VENUE (id CHAR(24), country_code CHAR(2),category_id INT, lat FLOAT(9,6), lon FLOAT(9,6), city_id int, " \
-          "PRIMARY KEY (id), FOREIGN KEY (city_id) REFERENCES CITY(id) ON UPDATE CASCADE ON DELETE RESTRICT, " \
-          "FOREIGN KEY (category_id) REFERENCES CATEGORY(id) ON UPDATE CASCADE ON DELETE RESTRICT)"
-    cursor.execute(sql)
+    if venue:
+        sql = "CREATE TABLE VENUE (id CHAR(24), country_code CHAR(2),category_id INT, lat FLOAT(9,6), lon FLOAT(9,6), city_id int, controlled bool, " \
+              "PRIMARY KEY (id), FOREIGN KEY (city_id) REFERENCES CITY(id) ON UPDATE CASCADE ON DELETE RESTRICT, " \
+              "FOREIGN KEY (category_id) REFERENCES CATEGORY(id) ON UPDATE CASCADE ON DELETE RESTRICT)"
+        cursor.execute(sql)
     # Create table CHECKIN
-    sql = "CREATE TABLE CHECKIN (user_id INT, timezone_offset INT, unix_utc_timestamp INT, venue_id CHAR(24), " \
-          "PRIMARY KEY (user_id, unix_utc_timestamp, venue_id), FOREIGN KEY (venue_id) REFERENCES VENUE(id) ON UPDATE" \
-          "  CASCADE ON DELETE CASCADE)"
-    cursor.execute(sql)
+    if checkin:
+        sql = "CREATE TABLE CHECKIN (user_id INT, timezone_offset INT, unix_utc_timestamp INT, venue_id CHAR(24), " \
+              "PRIMARY KEY (user_id, unix_utc_timestamp, venue_id), FOREIGN KEY (venue_id) REFERENCES VENUE(id) ON UPDATE" \
+              "  CASCADE ON DELETE CASCADE)"
+        cursor.execute(sql)
 
     # Create table DAILY_WEATHER
-    sql = "CREATE TABLE DAILY_WEATHER(id INT, city_id INT, unix_utc_timestamp INT, summary varchar(256), icon varchar(50), " \
-          "sunrise_time INT, sunset_time INT, moonphase FLOAT(3,2), precip_intensity FLOAT(6,4), precip_type varchar(10)," \
-          "dew_point FLOAT(6,2), wind_speed FLOAT(6,2), wind_bearing INT, cloud_cover FLOAT(3,2), humidity FLOAT(3,2), pressure FLOAT(6,2)," \
-          "visibility FLOAT(4,2), PRIMARY KEY (id), FOREIGN KEY (city_id) REFERENCES CITY(id) ON UPDATE CASCADE ON DELETE RESTRICT)"
-    cursor.execute(sql)
+    if daily_weather:
+        sql = "CREATE TABLE DAILY_WEATHER(id INT, city_id INT, unix_utc_timestamp INT, summary varchar(256), icon varchar(50), " \
+              "sunrise_time INT, sunset_time INT, moonphase FLOAT(3,2), precip_intensity FLOAT(6,4), precip_type varchar(10)," \
+              "dew_point FLOAT(6,2), wind_speed FLOAT(6,2), wind_bearing INT, cloud_cover FLOAT(3,2), humidity FLOAT(3,2), pressure FLOAT(6,2)," \
+              "visibility FLOAT(4,2), PRIMARY KEY (id), FOREIGN KEY (city_id) REFERENCES CITY(id) ON UPDATE CASCADE ON DELETE RESTRICT)"
+        cursor.execute(sql)
 
 
     # Create table HOURLY_WEATHER
-    sql = "CREATE TABLE HOURLY_WEATHER( daily_weather_id INT, utc_unix_timestamp INT, summary varchar(256), icon varchar(50)," \
-          " precip_intensity FLOAT(6,4), precip_type varchar(10), dew_point FLOAT(6,2), wind_speed FLOAT(6,2), wind_bearing INT," \
-          " cloud_cover FLOAT(3,2), humidity FLOAT(3,2), pressure FLOAT(6,2), visibility FLOAT(4,2), temperature FLOAT(5,2), " \
-          "PRIMARY KEY(daily_weather_id, utc_unix_timestamp), " \
-          " FOREIGN KEY (daily_weather_id) REFERENCES DAILY_WEATHER(id) ON UPDATE CASCADE ON DELETE RESTRICT) "
-    cursor.execute(sql)
+    if hourly_weather:
+        sql = "CREATE TABLE HOURLY_WEATHER( daily_weather_id INT, utc_unix_timestamp INT, summary varchar(256), icon varchar(50)," \
+              " precip_intensity FLOAT(6,4), precip_type varchar(10), dew_point FLOAT(6,2), wind_speed FLOAT(6,2), wind_bearing INT," \
+              " cloud_cover FLOAT(3,2), humidity FLOAT(3,2), pressure FLOAT(6,2), visibility FLOAT(4,2), temperature FLOAT(5,2), " \
+              "PRIMARY KEY(daily_weather_id, utc_unix_timestamp), " \
+              " FOREIGN KEY (daily_weather_id) REFERENCES DAILY_WEATHER(id) ON UPDATE CASCADE ON DELETE RESTRICT) "
+        cursor.execute(sql)
 
-def execute_insert_statement(sql, db, params):
+def execute_insert_statement(sql, db, params = None):
     cursor = db.cursor()
     try:
-        cursor.execute(sql, params)
+        if params is not None:
+            cursor.execute(sql, params)
+        else:
+            cursor.execute(sql)
         db.commit()
     except Exception as e:
         print("Params:")
@@ -86,13 +101,7 @@ def execute_select(sql, db, params = None):
     except MySQLdb.Error as e:
         print(str(e))
 
-def execute_select_with(sql, db):
-    try:
-       cursor = db.cursor()
-       cursor.execute(sql)
-       return cursor.fetchall()
-    except MySQLdb.Error as e:
-        print(str(e))
+
 
 def insert_cities(db):
     with open(cities_us_json, mode="r") as cities_file:
@@ -326,19 +335,28 @@ if __name__ == "__main__":
                   db="foursquare") # name of the data base
 
     db.set_character_set('utf8')
-
+    venue = True
+    checkin = False
+    weather = False
+    city = False
+    category = False
     print("CREATE DATABASE")
-    #create_database(db) #Comment in if you want to create Database from scratch
+    create_database(db, venue, checkin, weather, weather, city, category) #Comment in if you want to create Database from scratch
     print("INSERT CITIES")
-    #insert_cities(db) #Comment in if you want to insert the cities
+    if city:
+        insert_cities(db) #Comment in if you want to insert the cities
     print("INSERT CATEGORIES")
-    #insert_categories(db) #Comment in if you want to insert the categories
+    if category:
+        insert_categories(db) #Comment in if you want to insert the categories
     print("INSERT VENUES")
-    #insert_venues(db) #Comment in if you want to insert the venues
+    if venue:
+        insert_venues(db) #Comment in if you want to insert the venues
     print("INSERT CHECKINS")
-    #insert_checkins(db) #Comment in if you want to insert the checkins
+    if checkin:
+        insert_checkins(db) #Comment in if you want to insert the checkins
     print("INSERT WEATHER")
-    insert_and_crawl_hourly_and_daily_weather(db) #Comment in if you want to insert and crawl the weather data
+    if weather:
+        insert_and_crawl_hourly_and_daily_weather(db) #Comment in if you want to insert and crawl the weather data
 
     duration = datetime.now() - datetime_begin;
     print("Duration: " + str(duration))
